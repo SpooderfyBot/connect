@@ -17,6 +17,7 @@
         iceCandidatePoolSize: 10,
     };
 
+    let pc = null;
     let localStream = null;
     let metaData = {
         streamKey: null,
@@ -26,8 +27,9 @@
 
     async function startStreaming() {
         console.info("beginning rtc handshake...");
-        let pc = new RTCPeerConnection(servers);
+        pc = new RTCPeerConnection(servers);
 
+        let target = document.getElementsByTagName("video")[0]
         localStream = await navigator.mediaDevices.getUserMedia({video: true, audio: false});
 
         metaData.isStreaming = true;

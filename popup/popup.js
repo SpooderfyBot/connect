@@ -14,6 +14,8 @@ PetiteVue.createApp({
     isPublicChecked: false,
     isPublic: false,
 
+    displayErr: null,
+
     get userImg() {
         if (this.user == null) {
             return null
@@ -23,6 +25,11 @@ PetiteVue.createApp({
     },
 
     get page() {
+        if (this.displayErr !== null) {
+            console.log(this.displayErr);
+            return -1
+        }
+
         if (this.user == null) {
             return 1
         } else if (this.isStreaming) {
@@ -46,6 +53,14 @@ PetiteVue.createApp({
     },
 
     async load() {
+        try {
+            console.debug("checking runtime");
+            await browser.tabs.executeScript({file: "/content_scripts/checkValid.js"});
+        } catch (e) {
+            this.displayErr = "No video elements exist in this page.";
+            return true;
+        }
+
         await browser.tabs.executeScript({file: "/content_scripts/active.js"});
         console.log("injected active.js");
 
