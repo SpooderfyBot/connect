@@ -1,0 +1,40 @@
+{
+  "manifest_version": 2,
+  "name": "Spooderfy Connect",
+  "version": "0.1.0",
+  "description": "Links a video in your browser to a Spooderfy video room.",
+  "icons": {
+    "256": "icons/logo-rounded-256.png"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "spooderfy-link@spooderfy.com"
+    }
+  },
+  "browser_action": {
+    "default_icon": "icons/logo-rounded-256.png",
+    "default_title": "Spooderfy",
+    "default_popup": "popup/link.html"
+  },
+
+  "background": {
+    "scripts": ["popup/background.js"]
+  },
+
+  "content_security_policy": "script-src 'self' 'unsafe-eval' https://unpkg.com/axios@0.21.1/dist/axios.min.js; object-src 'self'",
+  "permissions": [
+    "https://unpkg.com/axios@0.21.1/dist/axios.min.js",
+    "http://127.0.0.1:8000/*",
+    "*://link.spooderfy.com/*",
+    "activeTab",
+    "webRequest",
+    "storage",
+    "tabs",
+    "idle"
+  ],
+  "web_accessible_resources": [
+    "icons/logo-256.png",
+    "icons/logo-rounded-256.png",
+    "vendor/petit-vue.js"
+  ]
+}

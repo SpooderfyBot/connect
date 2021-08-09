@@ -1,0 +1,268 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+    <link href="popup.css" rel="stylesheet">
+    <script src="petite-vue.js" type="application/javascript"></script>
+    <script src="https://unpkg.com/axios@0.21.1/dist/axios.min.js"
+            type="application/javascript"></script>
+</head>
+
+<body v-if="load()" class="flex flex-col py-4 overflow-hidden" id="app" style="width: 400px;"
+      v-scope>
+<!-- Header Section -->
+<div class="flex justify-between items-center px-8 pb-5 border-b border-gray-300">
+    <div class="flex">
+        <img alt=""
+             class="h-6 w-6 rounded-full object-contain mt-1"
+             src="https://cdn.discordapp.com/app-icons/585225058683977750/73628acbb1304b05c718f22a380767bd.png?size=256"/>
+        <div class="relative">
+            <h1 class="pl-2 text-lg font-bold">Spooderfy</h1>
+            <h3 class="absolute transform translate-y-2 translate-x-2 text-xs bottom-0 right-0">
+                connect
+            </h3>
+        </div>
+    </div>
+    <img alt="Discord" class="h-6 mt-2" src="https://discord.com/assets/cb48d2a8d4991281d7a6a95d2f58195e.svg"
+         v-if="user == null">
+    <div class="flex items-center" v-else>
+        <img :src="userImg" alt="" class="h-8 w-8 rounded-full mr-2"/>
+        <p class="font-semibold">{{ user.name }}</p>
+    </div>
+</div>
+
+<!-- Login Page -->
+<div class="flex flex-col items-center px-5" v-if="page === 1">
+    <h2 class="text-xl font-bold py-4">Hello 👋</h2>
+    <div class="spooderfy-gradient h-1 w-4/5 rounded-full"></div>
+    <h3 class="text-lg font-semibold text-center py-4">
+        It seems you don't have a Discord account linked,
+        please login to link the plugin.
+    </h3>
+    <button
+            @click="login"
+            class="flex rounded-lg pt-2 pb-3 px-4 text-white border-2 border-indigo-600 hover:border-indigo-400 text-xl font-bold transition duration-200 cursor-pointer my-4"
+            style="background: #5865F2;"
+            v-if="!buttonPending">
+        <img alt=""
+             class="h-6 w-6 mr-2 mt-1"
+             src="https://discord.com/assets/145dc557845548a36a82337912ca3ac5.svg"/>
+        Login with Discord
+    </button>
+    <div class="flex justify-center items-center rounded-lg py-4 px-4 border-2 border-indigo-400 text-white font-bold transition duration-300 focus:outline-none cursor-not-allowed my-4"
+         style="background: #5865F2;width: 244px;height: 52px"
+         v-else>
+        <span class="mb-1">Pending</span>
+        <div class="lds-ring" style="transform: scale(0.4) translateX(4rem);">
+            <div></div>
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+    </div>
+    <a class="flex items-center rounded-lg py-2 px-4 bg-gray-800 font-bold transition duration-200 cursor-pointer my-4"
+       href="https://spooderfy.com/premium"
+       style="color: #FF424D;">
+        <svg class="h-6 w-6 mr-2" fill="currentColor" style="color: #FF424D;"
+             viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+            <path clip-rule="evenodd"
+                  d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                  fill-rule="evenodd"/>
+        </svg>
+        Get Premium
+    </a>
+</div>
+
+<!-- Idle Page -->
+<div class="flex flex-col px-5" v-else-if="page === 2">
+    <div class="flex justify-between w-full py-4">
+        <h3 class="font-bold text-lg text-gray-700">Create a Stream</h3>
+        <button @click="logout" class="flex focus:outline-none cursor-pointer">
+            <p class="ml-2 font-semibold text-lg text-blue-500">Logout</p>
+            <svg class="h-4 w-4 text-blue-500" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke-linecap="round" stroke-linejoin="round"
+                      stroke-width="2"/>
+            </svg>
+        </button>
+    </div>
+    <div class="flex flex-col border-b border-gray-200 mt-4 pb-4">
+        <p class="cursor-default font-semibold text-gray-800">
+            Enter the room streaming key
+            <span class="text-red-600 font-bold text-lg">*</span>
+        </p>
+        <label class="flex items-center">
+            <svg class="h-6 w-6 mr-2 mt-1 text-green-600" fill="none"
+                 stroke="currentColor" v-if="streamKeyValid" viewBox="0 0 24 24"
+                 xmlns="http://www.w3.org/2000/svg">
+                <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                      stroke-linecap="round" stroke-linejoin="round"
+                      stroke-width="2"/>
+            </svg>
+            <svg class="h-6 w-6 mr-2 mt-1 text-red-600" fill="none" stroke="currentColor"
+                 v-else viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                      stroke-linecap="round" stroke-linejoin="round"
+                      stroke-width="2"/>
+            </svg>
+            <input class="focus:outline-none italic" placeholder="sfuisag723y5gsr23asd3"
+                   v-model="streamKey"/>
+        </label>
+    </div>
+    <div class="flex justify-between mt-9">
+        <a class="flex items-center rounded-lg py-2 px-4 bg-gray-800 font-bold transition duration-200 cursor-pointer"
+           href="https://spooderfy.com/premium"
+           style="color: #FF424D;">
+            <svg class="h-6 w-6 mr-2" fill="currentColor" style="color: #FF424D;"
+                 viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path clip-rule="evenodd"
+                      d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                      fill-rule="evenodd"/>
+            </svg>
+            <span class="mb-1">{{ (user !== null && user.premium ) ? 'Thank You!' : 'Get Premium' }}</span>
+        </a>
+        <button
+                :class="
+                    streamKeyValid ? 'border-green-200 hover:border-green-400 bg-green-500 text-gray-800 cursor-pointer' : 'border-gray-200 bg-gray-500 text-gray-200 cursor-not-allowed'
+                "
+                @click="startStreaming"
+                class="flex items-center rounded-lg border-2  py-2 px-4 font-bold transition duration-300 focus:outline-none"
+                v-if="!buttonPending">
+
+            <svg class="h-6 w-6 mr-2" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5.636 18.364a9 9 0 010-12.728m12.728 0a9 9 0 010 12.728m-9.9-2.829a5 5 0 010-7.07m7.072 0a5 5 0 010 7.07M13 12a1 1 0 11-2 0 1 1 0 012 0z"
+                      stroke-linecap="round" stroke-linejoin="round"
+                      stroke-width="2"/>
+            </svg>
+            <span class="mb-1">Start Streaming</span>
+        </button>
+        <div class="flex justify-center items-center rounded-lg border-2 border-red-400 py-2 px-4 text-white font-bold transition duration-300 focus:outline-none cursor-not-allowed h-12 "
+             style="background: #FF424D;width: 186px"
+             v-else>
+            <span class="mb-1">Loading</span>
+            <div class="lds-ring" style="transform: scale(0.4) translateX(4rem);">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stream Controls -->
+<div class="flex flex-col px-5" v-else-if="page === 3">
+    <div class="flex flex-col items-center">
+        <div class="flex justify-between w-full py-4">
+            <h3 class="font-bold text-lg text-gray-700">Stream Controls</h3>
+            <a class="flex border-b border-transparent hover:border-blue-500 transition duration-200 cursor-pointer">
+                <p class="ml-2 font-semibold text-lg text-blue-500">View Room</p>
+                <svg class="h-4 w-4 text-blue-500" fill="none" stroke="currentColor"
+                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                          stroke-linecap="round" stroke-linejoin="round"
+                          stroke-width="2"/>
+                </svg>
+            </a>
+        </div>
+        <div class="flex justify-between border-b border-gray-200 w-full mt-4 pb-4">
+            <p class="mr-8 text-gray-700">Allow <span class="font-bold">anyone</span> to play,
+                pause,
+                and seek.</p>
+            <label class="flex justify-start items-start mt-1">
+                <div class="bg-white border-2 rounded border-gray-400 w-6 h-6 flex flex-shrink-0 justify-center items-center mr-2 hover:border-blue-500 transition duration-200">
+                    <input @change="toggleControls"
+                           class="opacity-0 absolute"
+                           type="checkbox"
+                           v-model="allowControlsChecked">
+                    <svg class="fill-current hidden w-4 h-4 text-green-600 pointer-events-none"
+                         viewBox="0 0 20 20">
+                        <path d="M0 11l2-2 5 5L18 3l2 2L7 18z"/>
+                    </svg>
+                </div>
+            </label>
+        </div>
+        <div class="flex justify-between border-b border-gray-200 w-full mt-4 pb-4">
+            <p class="mr-8 text-gray-700">Make this stream <span class="font-bold">public</span>.
+            </p>
+            <label class="flex justify-start items-start mt-1">
+                <div class="bg-white border-2 rounded border-gray-400 w-6 h-6 flex flex-shrink-0 justify-center items-center mr-2 hover:border-blue-500 transition duration-200">
+                    <input @change="togglePublic"
+                           class="opacity-0 absolute"
+                           type="checkbox"
+                           v-model="isPublicChecked">
+                    <svg class="fill-current hidden w-4 h-4 text-green-600 pointer-events-none"
+                         viewBox="0 0 20 20">
+                        <path d="M0 11l2-2 5 5L18 3l2 2L7 18z"/>
+                    </svg>
+                </div>
+            </label>
+        </div>
+        <div class="flex justify-between border-b border-gray-200 w-full mt-4 pb-4">
+            <p class="mr-4 text-gray-700">
+                Room size limited to<br/>
+                <span class="font-bold">{{ counter }}</span> viewers.
+            </p>
+            <div class="custom-number-input h-10 w-32">
+                <div class="flex flex-row h-10 w-full rounded-lg relative bg-transparent mt-1">
+                    <button @click="decRoomSize"
+                            class=" bg-gray-300 text-gray-600 hover:text-gray-700 hover:bg-gray-400 h-full w-20 rounded-l cursor-pointer outline-none  transition duration-200">
+                        <span class="m-auto text-2xl font-thin">−</span>
+                    </button>
+                    <input @change="limitRoomSize"
+                           class="outline-none focus:outline-none text-center w-full bg-gray-300 font-semibold text-md hover:text-black focus:text-black  md:text-basecursor-default flex items-center text-gray-700 outline-none  transition duration-200"
+                           name="custom-input-number"
+                           type="number"
+                           v-model="counter"/>
+                    <button @click="incRoomSize"
+                            class="bg-gray-300 text-gray-600 hover:text-gray-700 hover:bg-gray-400 h-full w-20 rounded-r cursor-pointer transition duration-200">
+                        <span class="m-auto text-2xl font-thin">+</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-between w-full mt-8">
+            <a class="flex items-center rounded-lg py-2 px-4 bg-gray-800 font-bold transition duration-200 cursor-pointer"
+               href="https://spooderfy.com/premium"
+               style="color: #FF424D;">
+                <svg class="h-6 w-6 mr-2" fill="currentColor" style="color: #FF424D;"
+                     viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path clip-rule="evenodd"
+                          d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                          fill-rule="evenodd"/>
+                </svg>
+                <span class="mb-1">
+                    {{ (user !== null && user.premium ) ? 'Thank You!' : 'Get Premium' }}
+                </span>
+            </a>
+            <button
+                    @click="stopStreaming"
+                    class="flex items-center rounded-lg border-2 border-red-200 hover:border-red-400 py-2 px-4 text-gray-800 font-bold transition duration-300 focus:outline-none"
+                    style="background: #FF424D;"
+                    v-if="!buttonPending">
+                <svg class="h-6 w-6 mr-2" fill="none" stroke="currentColor"
+                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"
+                          stroke-linecap="round" stroke-linejoin="round"
+                          stroke-width="2"/>
+                </svg>
+                <span class="mb-1">Stop Streaming</span>
+            </button>
+            <div class="flex justify-center items-center rounded-lg border-2 border-red-400 py-2 px-4 text-white font-bold transition duration-300 focus:outline-none cursor-not-allowed h-12 "
+                 style="background: #FF424D;width: 184px"
+                 v-else>
+                <span class="mb-1">Loading</span>
+                <div class="lds-ring" style="transform: scale(0.4) translateX(4rem);">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="popup.js"></script>
+</body>
+</html>
